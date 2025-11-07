@@ -1,0 +1,58 @@
+<div class="loan-form-overlay" (click)="onClose()">
+  <div class="loan-form-container" (click)="$event.stopPropagation()">
+    <h2>{{ isEditMode ? 'Update Loan' : 'Add New Loan' }}</h2>
+    <form [formGroup]="loanForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="bookTitle">Book Title:</label>
+        <input type="text" id="bookTitle" formControlName="bookTitle">
+        <div class="error" *ngIf="loanForm.get('bookTitle')?.errors?.['required'] && loanForm.get('bookTitle')?.touched">
+          Book title is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="borrower">Borrower:</label>
+        <input type="text" id="borrower" formControlName="borrower">
+        <div class="error" *ngIf="loanForm.get('borrower')?.errors?.['required'] && loanForm.get('borrower')?.touched">
+          Borrower name is required
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="loanDate">Loan Date:</label>
+        <input type="date" id="loanDate" formControlName="loanDate">
+        <div class="error" *ngIf="loanForm.get('loanDate')?.errors?.['required'] && loanForm.get('loanDate')?.touched">
+          Loan date is required
+        </div>
+        <div class="error" *ngIf="loanForm.get('loanDate')?.errors?.['pastDate'] && loanForm.get('loanDate')?.touched">
+          Loan date must be today or a future date
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="returnDate">Return Date:</label>
+        <input type="datetime-local" id="returnDate" formControlName="returnDate">
+        <div class="error" *ngIf="loanForm.get('returnDate')?.errors?.['required'] && loanForm.get('returnDate')?.touched">
+          Return date is required
+        </div>
+        <div class="error" *ngIf="loanForm.get('returnDate')?.errors?.['pastDate'] && loanForm.get('returnDate')?.touched">
+          Return date must be at least one day after the loan date
+        </div>
+      </div>
+
+      <div class="form-group checkbox-group" *ngIf="isEditMode">
+        <label class="checkbox-label">
+          <input type="checkbox" formControlName="isReturned">
+          Book has been returned
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" [disabled]="loanForm.invalid || isSubmitting">
+          {{ isEditMode ? 'Update Loan' : 'Add Loan' }}
+        </button>
+        <button type="button" (click)="onClose()">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>

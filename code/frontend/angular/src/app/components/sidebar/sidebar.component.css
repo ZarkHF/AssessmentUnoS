@@ -1,0 +1,27 @@
+   /* Banner image */
+   .sidebar-banner,
+   img {
+     width: 100%;
+     height: auto;
+     background-color: black;
+   }
+   
+   .sidebar,
+   a {
+     padding: 10px 15px;
+     text-decoration: none;
+     font-size: 18px;
+     color: #fff;
+     display: block;
+   }
+
+   .sidebar,
+   a:hover {
+     background-color: #FF6747;
+   }
+
+   h1 {
+    font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+    text-align: center;
+    background-color: #FF6747;
+   }

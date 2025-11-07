@@ -1,0 +1,197 @@
+
+<div class="header">
+  <h1>Welcome {{ username }}</h1>
+  <button *ngIf="loggedIn" (click)="onLogout()" class="logout-btn">Logout</button>
+</div>
+
+<div *ngIf="!loggedIn" class="login-prompt">
+  <h2>Welcome to your Library</h2>
+  <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+    <div class="form-group">
+      <label for="username">Username</label>
+      <input 
+        type="text" 
+        id="username" 
+        formControlName="username"
+        placeholder="Enter your username" />
+      <div *ngIf="loginForm.get('username')?.errors?.['required'] && loginForm.get('username')?.touched" class="error">
+        Username is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="password">Password</label>
+      <input 
+        type="password" 
+        id="password" 
+        formControlName="password"
+        placeholder="Enter your password" />
+      <div *ngIf="loginForm.get('password')?.errors?.['required'] && loginForm.get('password')?.touched" class="error">
+        Password is required
+      </div>
+    </div>
+
+    <div *ngIf="loginError" class="error-popup">
+      {{ loginError }}
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="isLoggingIn">
+        {{ isLoggingIn ? 'Logging in...' : 'Login' }}
+      </button>
+      <button type="button" (click)="goToRegister()">Register</button>
+    </div>
+  </form>
+</div>
+<div *ngIf="loggedIn" class="library-section">
+  <div class="header-actions">
+    <h2>Current Loans on your library</h2>
+    <div class="buttons-container">
+      <button *ngIf="books.length > 0" (click)="toggleView()" class="view-toggle-btn">
+        <span *ngIf="isTableView">Show Cards</span>
+        <span *ngIf="!isTableView">Show Table</span>
+      </button>
+      <button (click)="openLoanForm()">Add new loan</button>
+    </div>
+  </div>
+
+  <app-loan-form *ngIf="showLoanForm" [book]="selectedBook" (close)="closeLoanForm()"></app-loan-form>
+
+  <div *ngIf="loading" class="loading">Loading books...</div>
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <app-confirm-dialog 
+    *ngIf="showDeleteConfirm" 
+    title="Confirm Delete"
+    [message]="'Are you sure you want to delete the loan for ' + (bookToDelete?.bookTitle || '') + '?'"
+    (confirm)="onDeleteConfirm()"
+    (cancel)="onDeleteCancel()">
+  </app-confirm-dialog>
+
+  <ng-container *ngIf="!loading && !error">
+    <div *ngIf="books.length === 0" class="no-books">
+      <p>No books currently on loan.</p>
+    </div>
+
+    <!-- Card View -->
+    <div class="books-container" *ngIf="!isTableView">
+      <div class="book-card" *ngFor="let book of books">
+        <div class="card-header">
+          <div class="header-content">
+            <h3>{{ book.bookTitle }}</h3>
+            <div class="header-buttons">
+              <button (click)="openLoanForm(book)">Update</button>
+              <button (click)="onDeleteClick(book)" class="delete-btn">Delete</button>
+            </div>
+          </div>
+        </div>        
+        <div class="card-body">
+          <div class="card-content" [class.no-image]="!book.coverImageUrl">
+            <div class="book-cover-container" *ngIf="book.coverImageUrl">
+              <img [src]="book.coverImageUrl" [alt]="book.bookTitle + ' cover'" class="book-cover">
+            </div>
+            <div class="book-info">
+              <p class="borrower"><strong>Borrower:</strong> {{ book.borrower }}</p>
+              <div class="dates">
+                <p class="loan-date"><strong>Borrow Date:</strong> {{ formatDate(book.loanDate) }}</p>
+                <p class="return-date"><strong>Return Date:</strong> {{ formatDate(book.returnDate, true) }}</p>
+              </div>
+              <p class="status" [class.returned]="book.isReturned">
+                <strong>Status:</strong> {{ book.isReturned ? 'Returned' : 'Borrowed' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table View -->
+    <div class="table-container" *ngIf="isTableView && books.length > 0" >
+      <div class="table-filters">
+        <div class="filter-group">
+          <input 
+            type="text" 
+            [(ngModel)]="filters.title" 
+            (ngModelChange)="applyFilters()"
+            placeholder="Filter by title..."
+            class="filter-input">
+        </div>
+        <div class="filter-group">
+          <input 
+            type="text" 
+            [(ngModel)]="filters.borrower" 
+            (ngModelChange)="applyFilters()"
+            placeholder="Filter by borrower..."
+            class="filter-input">
+        </div>
+        <div class="filter-group">
+          <select 
+            [(ngModel)]="filters.status" 
+            (ngModelChange)="applyFilters()"
+            class="filter-select">
+            <option value="">All Status</option>
+            <option value="borrowed">Borrowed</option>
+            <option value="returned">Returned</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th (click)="sort('bookTitle')" class="sortable">
+              Book Title
+              <span class="sort-icon" *ngIf="sortColumn === 'bookTitle'">
+                {{ sortDirection === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th (click)="sort('borrower')" class="sortable">
+              Borrower
+              <span class="sort-icon" *ngIf="sortColumn === 'borrower'">
+                {{ sortDirection === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th (click)="sort('loanDate')" class="sortable">
+              Loan Date
+              <span class="sort-icon" *ngIf="sortColumn === 'loanDate'">
+                {{ sortDirection === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th (click)="sort('returnDate')" class="sortable">
+              Return Date
+              <span class="sort-icon" *ngIf="sortColumn === 'returnDate'">
+                {{ sortDirection === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th (click)="sort('isReturned')" class="sortable">
+              Status
+              <span class="sort-icon" *ngIf="sortColumn === 'isReturned'">
+                {{ sortDirection === 'asc' ? '↑' : '↓' }}
+              </span>
+            </th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let book of filteredBooks">
+            <td>{{ book.bookTitle }}</td>
+            <td>{{ book.borrower }}</td>
+            <td>{{ formatDate(book.loanDate) }}</td>
+            <td>{{ formatDate(book.returnDate, true) }}</td>
+            <td>
+              <span class="status-badge" [class.returned]="book.isReturned">
+                {{ book.isReturned ? 'Returned' : 'Borrowed' }}
+              </span>
+            </td>
+            <td class="actions">
+              <button (click)="openLoanForm(book)">Update</button>
+              <button (click)="onDeleteClick(book)" class="delete-btn">Delete</button>
+            </td>
+          </tr>
+          <tr *ngIf="filteredBooks.length === 0">
+            <td colspan="6" class="no-results">No matching books found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </ng-container>
+</div>
